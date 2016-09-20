@@ -7,9 +7,10 @@ import math as Math
 import time as Time
 from time import time
 
+from sklearn.neighbors import NearestNeighbors
 
 from utils import compute_hdistance,compute_odistance
-from config import front_num_points,last_num_points
+from config import front_num_points,last_num_points,num_neighbors
 from config import train_csv_path,test_csv_path
 
 min_lon = -8.8
@@ -255,9 +256,59 @@ def gen_gridfeature(csv_path):
 
 
 
+def generater_neighbours_feature():
+    df_train = pd.read_csv(train_csv_path,header = 0)
+    df_test = pd.read_csv(test_csv_path,header = 0)
+
+    train_trj_lastpart = []
+    train_destination = []
+    test_trj_lastpart = []
+
+    for i in range(len(df_train)):
+        train_trj_lastpart.append(list(eval(df_train['TRJ_LAST_POINTS'][i])))
+        train_destination.append(list(eval(df_train['DESTINATION'][i])))
+
+    for i in range(len(df_test)):
+        test_trj_lastpart.append(list(eval(df_test['TRJ_LAST_POINTS'][i])))
+
+    train_trj_lastpart = np.array(train_trj_lastpart).reshape(len(df_train),last_num_points * 2)
+    train_destination = np.array(train_destination)
+    test_trj_lastpart = np.array(test_trj_lastpart).reshape(len(df_test),last_num_points * 2)
+
+    neigh = NearestNeighbors(num_neighbors + 1,0.4)
+    neigh.fit(train_trj_lastpart)
+    
+    train_neighbors_idx_odistance = neigh.kneighbors(train_trj_lastpart)
+    test_neighbors_idx_odistance = neigh.kneighbors(test_trj_lastpart)
 
 
+    train_neigh_odist_list = []
+    train_neigh_destination_list = []
 
+    for i in range(len(df_train)):
+        cur_neigh_idx = train_neighbors_idx_odistance[1,i,1:]
+        cur_neigh_odist = train_neighbors_idx_odistance[0,i,1:]
+        cur_neigh_destination = train_destination[cur_neigh_idx].reshape(2 * num_neighbors)
+        train_neigh_odist_list.append(cur_neigh_odist)
+        train_neigh_destination_list.append(cur_neigh_destination)
+
+    test_neigh_odist_list = []
+    test_neigh_destination_list = []
+    for i in range(len(df_test)):
+        cur_neigh_idx = test_neighbors_idx_odistance[1,i,1:]
+        cur_neigh_odist = test_neighbors_idx_odistance[0,i,1:]
+        cur_neigh_destination = train_destination[cur_neigh_idx].reshape(2 * num_neighbors)
+        test_neigh_odist_list.append(cur_neigh_odist)
+        test_neigh_destination_list.append(cur_neigh_destination)
+
+    df_train['NEIGHBORS_Euclidean_DISTANCE'] = train_neigh_odist_list
+    df_train['NEIGHBORS_DESTINATION'] = train_neigh_destination_list
+
+    df_test['NEIGHBORS_Euclidean_DISTANCE'] = test_neigh_odist_list
+    df_test['NEIGHBORS_DESTINATION'] = test_neigh_destination_list
+
+    df_train.to_csv(train_csv_path,index=False)
+    df_test.to_csv(test_csv_path,index=False)
 
 def run():
     map2grid()
