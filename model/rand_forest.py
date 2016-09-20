@@ -7,9 +7,10 @@ import pandas as pd
 
 from sklearn.ensemble import RandomForestRegressor
 
-
-from config import front_num_points,last_num_points
-from config import train_csv_path,test_csv_path
+import sys
+sys.path.append('..')
+from preprocess.config import front_num_points,last_num_points
+from preprocess.config import train_csv_path,test_csv_path
 
 
 
@@ -82,7 +83,7 @@ def run(result_csv_path):
     print('load data successfully ......')
 
     rf = RandomForestRegressor(
-            n_estimators = 200,
+            n_estimators = 1500,
             min_samples_split = 2,
             max_depth = 10,
             n_jobs = -1
