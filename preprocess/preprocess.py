@@ -275,7 +275,7 @@ def generate_neighbours_feature():
     train_destination = np.array(train_destination)
     test_trj_lastpart = np.array(test_trj_lastpart).reshape(len(df_test),last_num_points * 2)
 
-    neigh = NearestNeighbors(num_neighbors + 1,0.4,metric='euclidean',n_jobs = -1)
+    neigh = NearestNeighbors(num_neighbors + 1,0.4,metric='euclidean',algorithm = 'kd_tree',n_jobs = -1)
     neigh.fit(train_trj_lastpart)
     
     train_neighbors_idx_odistance = np.array(neigh.kneighbors(train_trj_lastpart))
@@ -286,19 +286,30 @@ def generate_neighbours_feature():
     train_neigh_destination_list = []
 
     for i in range(len(df_train)):
-        cur_neigh_idx = train_neighbors_idx_odistance[1,i,1:]
+        cur_neigh_idx = np.array(train_neighbors_idx_odistance[1,i,1:],dtype = int)
         cur_neigh_odist = train_neighbors_idx_odistance[0,i,1:]
-        cur_neigh_destination = train_destination[cur_neigh_idx].reshape(2 * num_neighbors)
-        train_neigh_odist_list.append(cur_neigh_odist)
+        cur_neigh_odist_value = []
+        cur_neigh_destination = []
+        for j in range(len(cur_neigh_odist)):
+            cur_neigh_odist_value.append(cur_neigh_odist[j])
+            cur_neigh_destination.append(train_destination[cur_neigh_idx[j]][0])
+            cur_neigh_destination.append(train_destination[cur_neigh_idx[j]][1])
+        
+        train_neigh_odist_list.append(cur_neigh_odist_value)
         train_neigh_destination_list.append(cur_neigh_destination)
 
     test_neigh_odist_list = []
     test_neigh_destination_list = []
     for i in range(len(df_test)):
-        cur_neigh_idx = test_neighbors_idx_odistance[1,i,1:]
+        cur_neigh_idx = np.array(test_neighbors_idx_odistance[1,i,1:],dtype = int)
         cur_neigh_odist = test_neighbors_idx_odistance[0,i,1:]
-        cur_neigh_destination = train_destination[cur_neigh_idx].reshape(2 * num_neighbors)
-        test_neigh_odist_list.append(cur_neigh_odist)
+        cur_neigh_odist_value = []
+        cur_neigh_destination = []
+        for j in range(len(cur_neigh_odist)):
+            cur_neigh_odist_value.append(cur_neigh_odist[j])
+            cur_neigh_destination.append(train_destination[cur_neigh_idx[j]][0])
+            cur_neigh_destination.append(train_destination[cur_neigh_idx[j]][1])
+        test_neigh_odist_list.append(cur_neigh_odist_value)
         test_neigh_destination_list.append(cur_neigh_destination)
 
     df_train['NEIGHBORS_Euclidean_DISTANCE'] = train_neigh_odist_list
