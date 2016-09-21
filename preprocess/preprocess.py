@@ -256,7 +256,7 @@ def gen_gridfeature(csv_path):
 
 
 
-def generater_neighbours_feature():
+def generate_neighbours_feature():
     df_train = pd.read_csv(train_csv_path,header = 0)
     df_test = pd.read_csv(test_csv_path,header = 0)
 
@@ -318,13 +318,13 @@ def run():
     #trj2grid_idx(test_csv_path)
     #print("2---trj2grid_idx train test completed......")
 
-    generate_firstPartTrjData(train_csv_path, front_num_points,True)
-    generate_firstPartTrjData(test_csv_path, front_num_points,False)
-    print("3---generate_firstPartTrjData train test completed .....")
-    
-    generate_lastPartTrjData(train_csv_path, last_num_points,True)
-    generate_lastPartTrjData(test_csv_path, last_num_points,False)
-    print("4---generate_lastPartTrjData train test completed .....")
+    #generate_firstPartTrjData(train_csv_path, front_num_points,True)
+    #generate_firstPartTrjData(test_csv_path, front_num_points,False)
+    #print("3---generate_firstPartTrjData train test completed .....")
+    #
+    #generate_lastPartTrjData(train_csv_path, last_num_points,True)
+    #generate_lastPartTrjData(test_csv_path, last_num_points,False)
+    #print("4---generate_lastPartTrjData train test completed .....")
     
     #timestamp2features(train_csv_path)
     #timestamp2features(test_csv_path)
@@ -334,8 +334,17 @@ def run():
     #gen_trjfeature(test_csv_path)
     #print("6---generate trj feature train test completed......")
 
+
     #gen_gridfeature(train_csv_path)
     #print("6---generate grid feature train completed......")
+
+    generate_neighbours_feature()
+    print('7---generate train test neighbors features .....')
+
+
+
+
+
 
 if __name__=='__main__':
     start = time()
