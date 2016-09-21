@@ -275,7 +275,7 @@ def generate_neighbours_feature():
     train_destination = np.array(train_destination)
     test_trj_lastpart = np.array(test_trj_lastpart).reshape(len(df_test),last_num_points * 2)
 
-    neigh = NearestNeighbors(num_neighbors + 1,0.4)
+    neigh = NearestNeighbors(num_neighbors + 1,0.4,metric='euclidean',n_jobs = -1)
     neigh.fit(train_trj_lastpart)
     
     train_neighbors_idx_odistance = neigh.kneighbors(train_trj_lastpart)
