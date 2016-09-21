@@ -8,6 +8,7 @@ import time as Time
 from time import time
 
 from sklearn.neighbors import NearestNeighbors
+from sklearn.externals import joblib
 
 from utils import compute_hdistance,compute_odistance
 from config import front_num_points,last_num_points,num_neighbors
@@ -277,7 +278,7 @@ def generate_neighbours_feature():
 
     neigh = NearestNeighbors(num_neighbors + 1,0.4,metric='euclidean',algorithm = 'kd_tree',n_jobs = -1)
     neigh.fit(train_trj_lastpart)
-    
+    joblib.dump(neigh,'neigh.m') 
     train_neighbors_idx_odistance = np.array(neigh.kneighbors(train_trj_lastpart))
     test_neighbors_idx_odistance = np.array(neigh.kneighbors(test_trj_lastpart))
 
@@ -291,9 +292,9 @@ def generate_neighbours_feature():
         cur_neigh_odist_value = []
         cur_neigh_destination = []
         for j in range(len(cur_neigh_odist)):
-            cur_neigh_odist_value.append(cur_neigh_odist[j])
-            cur_neigh_destination.append(train_destination[cur_neigh_idx[j]][0])
-            cur_neigh_destination.append(train_destination[cur_neigh_idx[j]][1])
+            cur_neigh_odist_value.append(float(cur_neigh_odist[j]))
+            cur_neigh_destination.append(float(train_destination[cur_neigh_idx[j]][0]))
+            cur_neigh_destination.append(float(train_destination[cur_neigh_idx[j]][1]))
         
         train_neigh_odist_list.append(cur_neigh_odist_value)
         train_neigh_destination_list.append(cur_neigh_destination)
@@ -306,9 +307,9 @@ def generate_neighbours_feature():
         cur_neigh_odist_value = []
         cur_neigh_destination = []
         for j in range(len(cur_neigh_odist)):
-            cur_neigh_odist_value.append(cur_neigh_odist[j])
-            cur_neigh_destination.append(train_destination[cur_neigh_idx[j]][0])
-            cur_neigh_destination.append(train_destination[cur_neigh_idx[j]][1])
+            cur_neigh_odist_value.append(float(cur_neigh_odist[j]))
+            cur_neigh_destination.append(float(train_destination[cur_neigh_idx[j]][0]))
+            cur_neigh_destination.append(float(train_destination[cur_neigh_idx[j]][1]))
         test_neigh_odist_list.append(cur_neigh_odist_value)
         test_neigh_destination_list.append(cur_neigh_destination)
 
