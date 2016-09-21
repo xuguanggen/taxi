@@ -278,8 +278,8 @@ def generate_neighbours_feature():
     neigh = NearestNeighbors(num_neighbors + 1,0.4,metric='euclidean',n_jobs = -1)
     neigh.fit(train_trj_lastpart)
     
-    train_neighbors_idx_odistance = neigh.kneighbors(train_trj_lastpart)
-    test_neighbors_idx_odistance = neigh.kneighbors(test_trj_lastpart)
+    train_neighbors_idx_odistance = np.array(neigh.kneighbors(train_trj_lastpart))
+    test_neighbors_idx_odistance = np.array(neigh.kneighbors(test_trj_lastpart))
 
 
     train_neigh_odist_list = []
