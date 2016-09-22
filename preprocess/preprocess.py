@@ -323,28 +323,28 @@ def generate_neighbours_feature():
     df_test.to_csv(test_csv_path,index=False)
 
 def run():
-    map2grid()
-    print("1----map2grid completed ....")
+    #map2grid()
+    #print("1----map2grid completed ....")
     
     #trj2grid_idx(train_csv_path)
     #trj2grid_idx(test_csv_path)
     #print("2---trj2grid_idx train test completed......")
 
-    #generate_firstPartTrjData(train_csv_path, front_num_points,True)
-    #generate_firstPartTrjData(test_csv_path, front_num_points,False)
-    #print("3---generate_firstPartTrjData train test completed .....")
-    #
-    #generate_lastPartTrjData(train_csv_path, last_num_points,True)
-    #generate_lastPartTrjData(test_csv_path, last_num_points,False)
-    #print("4---generate_lastPartTrjData train test completed .....")
+    generate_firstPartTrjData(train_csv_path, front_num_points,True)
+    generate_firstPartTrjData(test_csv_path, front_num_points,False)
+    print("3---generate_firstPartTrjData train test completed .....")
     
-    #timestamp2features(train_csv_path)
-    #timestamp2features(test_csv_path)
-    #print("5---timestamp2features train test completed.....")
+    generate_lastPartTrjData(train_csv_path, last_num_points,True)
+    generate_lastPartTrjData(test_csv_path, last_num_points,False)
+    print("4---generate_lastPartTrjData train test completed .....")
+    
+    timestamp2features(train_csv_path)
+    timestamp2features(test_csv_path)
+    print("5---timestamp2features train test completed.....")
 
-    #gen_trjfeature(train_csv_path)
-    #gen_trjfeature(test_csv_path)
-    #print("6---generate trj feature train test completed......")
+    gen_trjfeature(train_csv_path)
+    gen_trjfeature(test_csv_path)
+    print("6---generate trj feature train test completed......")
 
 
     #gen_gridfeature(train_csv_path)
