@@ -1,2 +1,2 @@
-Using Theano backend.
 Using gpu device 0: GeForce GTX TITAN X (CNMeM is disabled, cuDNN 5005)
+Using Theano backend.

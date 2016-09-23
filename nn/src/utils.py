@@ -2,11 +2,14 @@
 
 import pandas as pd
 import numpy as np
+import h5py
+import theano
 
 from config import Train_CSV_Path,Test_CSV_Path
 from config import front_num_points,last_num_points,num_neighbors,emb_size,dis_size
 from config import list_fields,con_fields,dis_fields
 
+from sklearn.cluster import MeanShift,estimate_bandwidth
 
 def getListFeature(df,fieldsname):
     sub_feature = []
@@ -103,3 +106,39 @@ def load_emb_input():
 
     return tr_emb_input,te_emb_input,vocabs_size
 
+#def cluster():
+#    df_train = pd.read_cs(Train_CSV_Path,header=0)
+#    destination = []
+#    for i in range(len(df_train)):
+#        destination.append(list(eval(df_train['DESTINATION'][i])))
+#
+#    destination = np.array(destination)
+#    bw = estimate_bandwidth(
+#            destination,
+#            quantile = 0.1,
+#            n_samples = 1000
+#            )
+#    ms = MeanShift(
+#            bandwidth = bw,
+#            bin_seeding = True,
+#            min_bin_freq = 5
+#            )
+#    ms.fit(destination)
+#    cluster_centers = ms.cluster_centers
+#    with h5py.File('cluster.h5','w') as f:
+#        f.create_dataset('cluster',data = cluster_centers)
+
+
+def const(v):
+    if theano.config.floatX=='float32':
+        return np.float32(v)
+    else:
+        return np.float64(v)
+
+rearth = const(6371)
+deg2rad = const(3.141592653589793 / 180)
+
+
+def caluate_Point(inputs):
+    cluster_centers = h5py.File('cluster.h5','r')['cluster'][:]
+    return K.dot(inputs,cluster_centers)
