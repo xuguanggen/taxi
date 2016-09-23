@@ -92,7 +92,7 @@ def load_data(csv_path,isTrain):
     feature_nearest_odistance = getListFeature(df,'NEIGHBORS_Euclidean_DISTANCE')
 
     data_x = np.hstack([feature_frontTrj,feature_last_Trj,feature_nearest_destination,feature_nearest_odistance])
-    for i in range( (front_num_points + last_num_points )*2,len(fields)):
+    for i in range( (front_num_points + last_num_points )*2 + num_neighbors*3,len(fields)):
         cur_feature_array = np.array(df[fields[i]]).reshape(data_x.shape[0],1)
         data_x = np.hstack([data_x,cur_feature_array])
 
@@ -115,9 +115,9 @@ def run(result_csv_path):
     print('load data successfully ......')
 
     rf = RandomForestRegressor(
-            n_estimators = 1500,
+            n_estimators = 2000, #[1500,]
             min_samples_split = 2,
-            max_depth = 10,
+            max_depth = 15, # [10,]
             n_jobs = -1
             )
     rf.fit(train_x,train_y)
