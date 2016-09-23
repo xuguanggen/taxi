@@ -49,7 +49,7 @@ def cluster():
             min_bin_freq = 5
             )
     ms.fit(destination)
-    cluster_centers = ms.cluster_centers
+    cluster_centers = ms.cluster_centers_
     with h5py.File('cluster.h5','w') as f:
         f.create_dataset('cluster',data = cluster_centers)
     return cluster_centers
@@ -91,11 +91,7 @@ def build_mlp(n_con,n_emb,vocabs_size,n_dis,emb_size,cluster_size):
 
 
 
-<<<<<<< HEAD
 def main(result_csv_path,hasCluster):
-=======
-def main(result_csv_path,IsCluster):
->>>>>>> c8a12990222e5bcd018e2031cc9ad2db7dbd0677
     print('1. Loading Data.........')
     tr_con_feature,tr_emb_feature,tr_label,te_con_feature,te_emb_feature,vocabs_size = load_dataset()
     
@@ -106,18 +102,11 @@ def main(result_csv_path,IsCluster):
     test_x = prepare_inputX(te_con_feature,te_emb_feature)
     print('1.1 cluster.............')
     cluster_centers = []
-<<<<<<< HEAD
     if hasCluster:
         f = h5py.File('cluster.h5','r')
         cluster_centers = f['cluster'][:]
     else:
         cluster_centers = cluster()
-=======
-    if IsCluster:
-        cluster_centers = cluster()
-    else:
-        cluster_centers = h5py.File('cluster.h5','r')['cluster'][:]
->>>>>>> c8a12990222e5bcd018e2031cc9ad2db7dbd0677
 
     print('2. Building model..........')
     model_name = 'MLP_0.1'
