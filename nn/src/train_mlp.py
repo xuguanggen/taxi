@@ -6,8 +6,8 @@ from utils import load_con_input,load_emb_input
 
 
 
-
-
+from sklearn.cluster import MeanShift,estimate_bandwidth
+import h5py
 import numpy as np
 import pandas as pd
 import math as Math
@@ -32,7 +32,7 @@ def prepare_inputX(con_feature,emb_feature):
 
 
 def cluster():
-    df_train = pd.read_cs(Train_CSV_Path,header=0)
+    df_train = pd.read_csv(Train_CSV_Path,header=0)
     destination = []
     for i in range(len(df_train)):
         destination.append(list(eval(df_train['DESTINATION'][i])))
@@ -91,7 +91,7 @@ def build_mlp(n_con,n_emb,vocabs_size,n_dis,emb_size,cluster_size):
 
 
 
-def main(result_csv_path,IsCluster):
+def main(result_csv_path,hasCluster):
     print('1. Loading Data.........')
     tr_con_feature,tr_emb_feature,tr_label,te_con_feature,te_emb_feature,vocabs_size = load_dataset()
     
@@ -102,10 +102,11 @@ def main(result_csv_path,IsCluster):
     test_x = prepare_inputX(te_con_feature,te_emb_feature)
     print('1.1 cluster.............')
     cluster_centers = []
-    if IsCluster:
-        cluster_centers = cluster()
+    if hasCluster:
+        f = h5py.File('cluster.h5','r')
+        cluster_centers = f['cluster'][:]
     else:
-        cluster_centers = h5py.File('cluster.h5','r')['cluster'][:]
+        cluster_centers = cluster()
 
     print('2. Building model..........')
     model_name = 'MLP_0.1'
