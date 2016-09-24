@@ -3,7 +3,7 @@
 from config import Train_CSV_Path,Test_CSV_Path
 from config import dis_size,emb_size
 from utils import load_con_input,load_emb_input
-
+from utils import caluate_point,hdist
 
 
 from sklearn.cluster import MeanShift,estimate_bandwidth
@@ -19,7 +19,7 @@ from keras.layers.core import Dense,Dropout,Activation,Flatten,Merge,Lambda
 from keras.layers.embeddings import Embedding
 from keras.optimizers import SGD,Adagrad
 from keras.layers import BatchNormalization
-
+from keras.callbacks import EarlyStopping,ModelCheckpoint
 
 
 def prepare_inputX(con_feature,emb_feature):
@@ -109,21 +109,23 @@ def main(result_csv_path,hasCluster):
         cluster_centers = cluster()
 
     print('2. Building model..........')
-    model_name = 'MLP_0.1'
+    model_name = 'MLP_0.2'
     model = build_mlp(n_con,n_emb,vocabs_size,dis_size,emb_size,cluster_centers.shape[0])
-    model.compile(loss='mean_squared_error',optimizer=Adagrad())
+    checkPoint = ModelCheckpoint('weights/' + model_name +'.h5',save_best_only=True)
+    model.compile(loss=hdist,optimizer='sgd') #[loss = 'mse',optimizer= Adagrad]
     model.fit(
         train_x,
         tr_label,
-        nb_epoch = 200,
-        batch_size = 500,
+        nb_epoch = 1500, #1000
+        batch_size = 400, # 500
         verbose = 1,
         validation_split = 0.3,
+        callbacks = [checkPoint]
     )
     ##### dump model ########
-    json_string = model.to_json()
-    open('weights/'+ model_name +'.json','w').write(json_string)
-    model.save_weights('weights/'+ model_name + '.h5',overwrite=True)
+    #json_string = model.to_json()
+    #open('weights/'+ model_name +'.json','w').write(json_string)
+    #model.save_weights('weights/'+ model_name + '.h5',overwrite=True,)
 
     ####### predict #############################
     print('3. Predicting result.........')
@@ -138,7 +140,7 @@ def main(result_csv_path,hasCluster):
 
 if __name__=='__main__':
     start = time()
-    main('result/result_mlp_0.1.csv',False)
+    main('result/result_mlp_0.1.csv',True)
     end = time()
     print('Time:\t'+str((end-start)/3600)+' hours')
 

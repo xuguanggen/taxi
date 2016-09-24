@@ -5,11 +5,14 @@ import numpy as np
 import h5py
 import theano
 
+
 from config import Train_CSV_Path,Test_CSV_Path
 from config import front_num_points,last_num_points,num_neighbors,emb_size,dis_size
 from config import list_fields,con_fields,dis_fields
 
 from sklearn.cluster import MeanShift,estimate_bandwidth
+from keras import backend as K
+from theano import tensor as T
 
 def getListFeature(df,fieldsname):
     sub_feature = []
@@ -139,6 +142,21 @@ rearth = const(6371)
 deg2rad = const(3.141592653589793 / 180)
 
 
-def caluate_Point(inputs):
-    cluster_centers = h5py.File('cluster.h5','r')['cluster'][:]
+def caluate_point(inputs):
+    f = h5py.File('cluster.h5')
+    cluster_centers = f['cluster'][:]
     return K.dot(inputs,cluster_centers)
+
+
+def hdist(y_pred,y_true):
+    pred_lon = y_pred[:,0] * deg2rad
+    pred_lat = y_pred[:,1] * deg2rad
+    true_lon = y_true[:,0] * deg2rad
+    true_lat = y_true[:,1] * deg2rad
+    dlon = abs(pred_lon - true_lon)
+    dlat = abs(pred_lat - true_lat)
+    a1 = T.sin(dlat/2)**2 + T.cos(true_lat) * T.cos(true_lat) * (T.sin(dlon/2)**2)
+    #d = T.arctan2(T.sqrt(a1),T.sqrt(const(1)-a1))
+    d = T.arcsin(T.sqrt(a1))
+    hd = const(2000) * rearth * d
+    return hd
