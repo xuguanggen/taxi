@@ -5,6 +5,7 @@ from time import time
 import numpy as np
 import pandas as pd
 
+from sklearn.externals import joblib
 from sklearn.ensemble import RandomForestRegressor
 
 import sys
@@ -13,6 +14,7 @@ from preprocess.config import front_num_points,last_num_points,num_neighbors
 from preprocess.config import train_csv_path,test_csv_path
 
 
+Model_Name = 'rf_20160925_1.3'
 
 
 fields = []
@@ -39,6 +41,8 @@ for i in range(num_neighbors):
 fields.append('TAXI_ID')
 fields.append('DAYOFWEEK')
 fields.append('HOUROFDAY')
+fields.append('CALL_TYPE')
+fields.append('DAY_TYPE')
 fields.append('TRJ_Haversine_DISTANCE')
 fields.append('TRJ_Euclidean_DISTANCE')
 fields.append('IS_AWAY_CENTER')
@@ -115,12 +119,15 @@ def run(result_csv_path):
     print('load data successfully ......')
 
     rf = RandomForestRegressor(
-            n_estimators = 2000, #[1500,]
+            n_estimators = 2500, #[1500,2000]
             min_samples_split = 2,
-            max_depth = 15, # [10,]
+            max_depth = 16, # [10,15]
             n_jobs = -1
             )
     rf.fit(train_x,train_y)
+    ###### save model ##################
+    joblib.dump(rf,'weights/'+Model_Name+'.m')
+
     y_pred = rf.predict(test_x)
 
 
@@ -143,7 +150,7 @@ def run(result_csv_path):
 
 if __name__=='__main__':
     start = time()
-    result_csv_path = 'result/rf_20160922_1.2.csv'
+    result_csv_path = 'result/'+Model_Name+'.csv'
     run(result_csv_path)
     end = time()
     print('Time :\t'+str((end - start)/3600) +' Hours')
