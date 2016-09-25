@@ -13,6 +13,9 @@ from sklearn.externals import joblib
 from utils import compute_hdistance,compute_odistance
 from config import front_num_points,last_num_points,num_neighbors
 from config import train_csv_path,test_csv_path
+from config import dict_calltype,dict_daytype
+
+
 
 min_lon = -8.8
 max_lon = -7
@@ -153,6 +156,8 @@ def gen_trjfeature(csv_path):
     trj_time_list = []
     speed_list = []
     isDriveAwayCity_list = []
+    calltype_list = []
+    daytype_list = []
     for i in range(len(df)):
         cur_trj_lonlat_list = list(eval(df["POLYLINE"][i]))
         if len(cur_trj_lonlat_list) <= 2:
@@ -192,13 +197,17 @@ def gen_trjfeature(csv_path):
             #lastPoint_destination_distance_list.append(distance)
 
             trj_time_list.append(15 * (len(cur_trj_lonlat_list)))
-
+        print(str(i))
+        calltype_list.append(dict_calltype[df['CALL_TYPE'][i]])
+        daytype_list.append(dict_daytype[df['DAY_TYPE'][i]])
     df["TRJ_Haversine_DISTANCE"] = h_distance_list
     df['TRJ_Euclidean_DISTANCE'] = o_distance_list
     df['IS_AWAY_CENTER'] = isDriveAwayCity_list
     #df["LAST_DISTANCE"] = lastPoint_destination_distance_list
     df["TRJ_TIME"] = trj_time_list
     df["TRJ_SPEED"] = speed_list
+    df['CALL_TYPE'] = calltype_list
+    df['DAY_TYPE'] = daytype_list
     df.to_csv(csv_path,index = False)
 
 
@@ -330,28 +339,28 @@ def run():
     #trj2grid_idx(test_csv_path)
     #print("2---trj2grid_idx train test completed......")
 
-    generate_firstPartTrjData(train_csv_path, front_num_points,True)
-    generate_firstPartTrjData(test_csv_path, front_num_points,False)
-    print("3---generate_firstPartTrjData train test completed .....")
+    #generate_firstPartTrjData(train_csv_path, front_num_points,True)
+    #generate_firstPartTrjData(test_csv_path, front_num_points,False)
+    #print("3---generate_firstPartTrjData train test completed .....")
     
-    generate_lastPartTrjData(train_csv_path, last_num_points,True)
-    generate_lastPartTrjData(test_csv_path, last_num_points,False)
-    print("4---generate_lastPartTrjData train test completed .....")
+    #generate_lastPartTrjData(train_csv_path, last_num_points,True)
+    #generate_lastPartTrjData(test_csv_path, last_num_points,False)
+    #print("4---generate_lastPartTrjData train test completed .....")
     
-    timestamp2features(train_csv_path)
-    timestamp2features(test_csv_path)
-    print("5---timestamp2features train test completed.....")
+    #timestamp2features(train_csv_path)
+    #timestamp2features(test_csv_path)
+    #print("5---timestamp2features train test completed.....")
 
     gen_trjfeature(train_csv_path)
-    gen_trjfeature(test_csv_path)
+    #gen_trjfeature(test_csv_path)
     print("6---generate trj feature train test completed......")
 
 
     #gen_gridfeature(train_csv_path)
     #print("6---generate grid feature train completed......")
 
-    generate_neighbours_feature()
-    print('7---generate train test neighbors features .....')
+    #generate_neighbours_feature()
+    #print('7---generate train test neighbors features .....')
 
 
 
