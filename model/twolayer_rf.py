@@ -9,6 +9,8 @@ from sklearn.externals import joblib
 from sklearn.ensemble import RandomForestRegressor
 
 from utils import load_data
+from utils import save_results
+
 
 import sys
 sys.path.append('..')
@@ -22,8 +24,13 @@ Model_Name = 'TwoLayerRF_20160925_1'
 
 
 
-def feature_engineer(feature,pred):
+def feature_engineer(rf,feature,pred):
+    add_feature = []
+    for sub_est in rf.estimators_:
+        add_feature.append(sub_est.predict(feature))
 
+    feature = np.hstack([feature,add_feature[:],pred])
+    return feature
 
 
 
@@ -32,6 +39,7 @@ def run(result_csv_path):
     test_x = load_data(test_csv_path,False)
     print('load data successfully.........')
 
+    print('layer 1 train..........')
     layer1_rf = RandomForestRegressor(
             n_estimators = 2500,
             max_features = 0.8,
@@ -40,8 +48,35 @@ def run(result_csv_path):
             n_jobs = -1
             )
     layer1_rf.fit(train_x,train_y)
-    print('layer 1 train successfully..........')
     ################# save model##################
     joblib.dump(layer1_rf,'weights/layer1_'+Model_Name+'.m')
 
+    tr_pred = layer1_rf.predict(train_x)
+    train_x = feature_engineer(layer1_rf,train_x,tr_pred)
+
+    te_pred = layer1_rf.predict(test_x)
+    test_x = feature_engineer(layer1_rf,test_x,te_pred)
+
+    print('layer 2 train ............')
+    layer2_rf = RandomForestRegressor(
+            n_jobs = -1,
+            n_estimators = 600,
+            max_features = 'sqrt',
+            max_depth = 20,
+            bootstrap = False
+            )
+    layer2_rf.fit(train_x,train_y)
+    joblib.dump(layer2_rf,'weights/layer2_'+Model_Name+'.m')
+    y_pred = layer2_rf.predict(test_x)
+
+    ############ save_results ########################
+    save_results(result_csv_path,y_pred)
+
+
+if __name__=='__main__':
+    start = time()
+    result_csv_path = 'result/'+Model_Name+'.csv'
+    run(result_csv_path)
+    end = time()
+    print('Time :\t'+str((end - start)/3600) +' Hours')
 
