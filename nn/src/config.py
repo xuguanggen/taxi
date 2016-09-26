@@ -29,9 +29,11 @@ dis_fields = [
     'TAXI_ID',
     'DAYOFWEEK',
     'HOUROFDAY',
-    'IS_AWAY_CENTER'
+    'IS_AWAY_CENTER',
+    'CALL_TYPE',
+    'DAY_TYPE'
     ]
 
 
 
-
+MAX_LENGTH = 3880

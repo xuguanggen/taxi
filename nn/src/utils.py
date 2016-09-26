@@ -7,12 +7,15 @@ import theano
 
 
 from config import Train_CSV_Path,Test_CSV_Path
-from config import front_num_points,last_num_points,num_neighbors,emb_size,dis_size
+from config import front_num_points,last_num_points,num_neighbors,emb_size,dis_size,MAX_LENGTH
 from config import list_fields,con_fields,dis_fields
 
 from sklearn.cluster import MeanShift,estimate_bandwidth
 from keras import backend as K
+from keras.preprocessing import sequence
 from theano import tensor as T
+
+
 
 def getListFeature(df,fieldsname):
     sub_feature = []
@@ -109,6 +112,34 @@ def load_emb_input():
 
     return tr_emb_input,te_emb_input,vocabs_size
 
+def load_seq_input():
+    df_train = pd.read_csv(Train_CSV_Path,header=0)
+    df_test = pd.read_csv(Test_CSV_Path,header=0)
+    tr_seq = []
+    te_seq = []
+    for i in range(len(df_train)):
+        cur_trj = list(eval(df_train['POLYLINE'][i]))
+        if len(cur_trj) == 1:
+            tr_seq.append(cur_trj)
+        else:
+            tr_seq.append(cur_trj[:-1])
+
+    for i in range(len(df_test)):
+        cur_trj = list(eval(df_test['POLYLINE'][i]))
+        if len(cur_trj) == 1:
+            te_seq.append(cur_trj)
+        else:
+            te_seq.append(cur_trj[:-1])
+    
+    tr_seq = sequence.pad_sequences(tr_seq,maxlen=MAX_LENGTH,dtype='float32')
+    te_seq = sequence.pad_sequences(te_seq,maxlen=MAX_LENGTH,dtype='float32')
+    tr_seq = np.array(tr_seq)
+    te_seq = np.array(te_seq)
+    tr_seq_input = {'seq_input':tr_seq}
+    te_seq_input = {'seq_input':te_seq}
+    return tr_seq_input ,te_seq_input
+
+
 #def cluster():
 #    df_train = pd.read_cs(Train_CSV_Path,header=0)
 #    destination = []
@@ -156,7 +187,18 @@ def hdist(y_pred,y_true):
     dlon = abs(pred_lon - true_lon)
     dlat = abs(pred_lat - true_lat)
     a1 = T.sin(dlat/2)**2 + T.cos(true_lat) * T.cos(true_lat) * (T.sin(dlon/2)**2)
-    #d = T.arctan2(T.sqrt(a1),T.sqrt(const(1)-a1))
-    d = T.arcsin(T.sqrt(a1))
+    d = T.arctan2(T.sqrt(a1),T.sqrt(const(1)-a1))
+    #d = T.arcsin(T.sqrt(a1))
     hd = const(2000) * rearth * d
+    #return T.switch(T.eq(hd,float('nan')),(y_pred - y_true).norm(2,axis=1),hd)
     return hd
+
+
+
+def save_results(te_predict,result_csv_path):
+    df_test = pd.read_csv(Test_CSV_Path,header=0)
+    result = pd.DataFrame()
+    result['TRIP_ID'] = df_test['TRIP_ID']
+    result['LATITUDE'] = te_predict[:,1]
+    result['LONGITUDE'] = te_predict[:,0]
+    result.to_csv(result_csv_path,index=False)

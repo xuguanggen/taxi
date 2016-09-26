@@ -21,6 +21,7 @@ from keras.optimizers import SGD,Adagrad
 from keras.layers import BatchNormalization
 from keras.callbacks import EarlyStopping,ModelCheckpoint
 
+model_name = 'MLP_0.3'
 
 def prepare_inputX(con_feature,emb_feature):
     n_emb = emb_feature.shape[1]
@@ -55,10 +56,10 @@ def cluster():
     return cluster_centers
 
 def load_dataset():
-    tr_input,te_input = load_con_input()
-    tr_con_feature = tr_input['con_input']
-    tr_label = tr_input['output']
-    te_con_feature = te_input['con_input']
+    tr_con_input,te_con_input = load_con_input()
+    tr_con_feature = tr_con_input['con_input']
+    tr_label = tr_con_input['output']
+    te_con_feature = te_con_input['con_input']
 
     tr_emb_input ,te_emb_input,vocabs_size = load_emb_input()
     tr_emb_feature = tr_emb_input['emb_input']
@@ -109,18 +110,17 @@ def main(result_csv_path,hasCluster):
         cluster_centers = cluster()
 
     print('2. Building model..........')
-    model_name = 'MLP_0.2'
     model = build_mlp(n_con,n_emb,vocabs_size,dis_size,emb_size,cluster_centers.shape[0])
     checkPoint = ModelCheckpoint('weights/' + model_name +'.h5',save_best_only=True)
-    model.compile(loss=hdist,optimizer='sgd') #[loss = 'mse',optimizer= Adagrad]
+    model.compile(loss=hdist,optimizer='rmsprop') #[loss = 'mse',optimizer= Adagrad]
     model.fit(
         train_x,
         tr_label,
-        nb_epoch = 1500, #1000
-        batch_size = 400, # 500
+        nb_epoch = 2000, #1000 # 1500
+        batch_size = 500, # 500 #400
         verbose = 1,
         validation_split = 0.3,
-        callbacks = [checkPoint]
+        callbacks =([checkPoint])
     )
     ##### dump model ########
     #json_string = model.to_json()
@@ -140,7 +140,7 @@ def main(result_csv_path,hasCluster):
 
 if __name__=='__main__':
     start = time()
-    main('result/result_mlp_0.1.csv',True)
+    main('result/result_'+model_name+'.csv',True)
     end = time()
     print('Time:\t'+str((end-start)/3600)+' hours')
 
