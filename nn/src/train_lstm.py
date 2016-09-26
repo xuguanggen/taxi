@@ -2,9 +2,11 @@
 
 from config import Train_CSV_Path,Test_CSV_Path
 from config import dis_size,emb_size,MAX_LENGTH
-from utils import load_emb_input,load_seq_input,load_con_input
+from utils import load_emb_input,load_te_seq_input,load_con_input
 from utils import caluate_point,hdist
-from utils import save_results
+from utils import prepare_inputX,save_results
+from utils import train_generator,getValData
+
 
 import h5py
 import numpy as np
@@ -25,42 +27,22 @@ from keras.callbacks import EarlyStopping,ModelCheckpoint
 model_name = 'LSTM_0.1'
 result_csv_path = 'result/'+model_name+'.csv'
 
-def prepare_inputX(con_feature,emb_feature,seq_feature):
-    n_emb = emb_feature.shape[1]
-    input_x = []
-    input_x.append(con_feature)
-    for i in range(n_emb):
-        input_x.append(emb_feature[:,i])
-    input_x.append(seq_feature)
-    return input_x
 
 
-
-
-
-
-
-
-
-
-def load_dataset():
+def load_test_dataset():
     tr_con_input,te_con_input = load_con_input()
-    tr_con_feature = tr_con_input['con_input']
-    tr_label = tr_con_input['output']
     te_con_feature = te_con_input['con_input']
 
     tr_emb_input,te_emb_input, vocabs_size = load_emb_input()
-    tr_emb_feature = tr_emb_input['emb_input']
     te_emb_feature = te_emb_input['emb_input']
 
-    tr_seq_input,te_seq_input = load_seq_input()
-    tr_seq_feature = tr_seq_input['seq_input']
+    te_seq_input = load_te_seq_input()
     te_seq_feature = te_seq_input['seq_input']
 
-    return tr_con_feature,tr_emb_feature,tr_seq_feature,tr_label,te_con_feature,te_emb_feature,te_seq_feature,vocabs_size
+    return te_con_feature,te_emb_feature,te_seq_feature,vocabs_size
 
 
-def build_lstm(n_con,n_emb,vocabs_size,n_dis,emb_size,cluster_centers):
+def build_lstm(n_con,n_emb,vocabs_size,n_dis,emb_size,cluster_size):
     hidden_size = 800
     
     con = Sequential()
@@ -90,32 +72,33 @@ def build_lstm(n_con,n_emb,vocabs_size,n_dis,emb_size,cluster_centers):
     return model
 
 def main():
+    batches_per_epoch = 250
+    generate_size = 200
+    nb_epoch = 20
     print('1. Loading data.............')
-    tr_con_feature,tr_emb_feature,tr_seq_feature,tr_label,te_con_feature,te_emb_feature,te_seq_feature ,vocabs_size= load_dataset()
+    te_con_feature,te_emb_feature,te_seq_feature,vocabs_size = load_test_dataset()
     
-    n_con = tr_con_feature.shape[1]
-    n_emb = tr_emb_feature.shape[1]
+    n_con = te_con_feature.shape[1]
+    n_emb = te_emb_feature.shape[1]
     print('1.1 merge con_feature,emb_feature,seq_feature.....')
-    train_feature = prepare_inputX(tr_con_feature,tr_emb_feature,tr_seq_feature)
     test_feature = prepare_inputX(te_con_feature,te_emb_feature,te_seq_feature)
 
     print('2. cluster.........')
     cluster_centers = h5py.File('cluster.h5','r')['cluster'][:]
 
     print('3. Building model..........')
-    model = build_lstm(n_con,n_emb,vocabs_size,n_dis,emb_size,cluster_centers.shape[0])
+    model = build_lstm(n_con,n_emb,vocabs_size,dis_size,emb_size,cluster_centers.shape[0])
     checkPoint = ModelCheckpoint('weights/' + model_name +'.h5',save_best_only=True)
     earlystopping = EarlyStopping(patience = 500)
     model.compile(loss=hdist,optimizer='rmsprop') #[loss = 'mse',optimizer= Adagrad]
-    
-    model.fit(
-        train_feature,
-        tr_label,
-        nb_epoch = 20,
-        batch_size = 500,
+    tr_generator = train_generator(generate_size)
+    model.fit_generator(
+        tr_generator,
+        samples_per_epoch = batches_per_epoch* generate_size,
+        nb_epoch = nb_epoch,
+        validation_data = getValData(),
         verbose = 1,
-        validation_split = 0.3,
-        callback = [checkPoint,earlystopping]
+        callbacks = [checkPoint,earlystopping]
     )
 
     print('4. Predicting result .............')

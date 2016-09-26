@@ -37,3 +37,5 @@ dis_fields = [
 
 
 MAX_LENGTH = 3880
+
+Val_Size = 500

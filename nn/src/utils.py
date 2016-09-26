@@ -9,6 +9,7 @@ import theano
 from config import Train_CSV_Path,Test_CSV_Path
 from config import front_num_points,last_num_points,num_neighbors,emb_size,dis_size,MAX_LENGTH
 from config import list_fields,con_fields,dis_fields
+from config import Val_Size
 
 from sklearn.cluster import MeanShift,estimate_bandwidth
 from keras import backend as K
@@ -78,9 +79,9 @@ def load_con_input():
     tr_label = np.array(tr_label)
 
 
-    tr_input = {'con_input':tr_feature,'output':tr_label}
-    te_input = {'con_input':te_feature}
-    return tr_input,te_input
+    tr_con_input = {'con_input':tr_feature,'output':tr_label}
+    te_con_input = {'con_input':te_feature}
+    return tr_con_input,te_con_input
 
 
 
@@ -112,17 +113,9 @@ def load_emb_input():
 
     return tr_emb_input,te_emb_input,vocabs_size
 
-def load_seq_input():
-    df_train = pd.read_csv(Train_CSV_Path,header=0)
+def load_te_seq_input():
     df_test = pd.read_csv(Test_CSV_Path,header=0)
-    tr_seq = []
     te_seq = []
-    for i in range(len(df_train)):
-        cur_trj = list(eval(df_train['POLYLINE'][i]))
-        if len(cur_trj) == 1:
-            tr_seq.append(cur_trj)
-        else:
-            tr_seq.append(cur_trj[:-1])
 
     for i in range(len(df_test)):
         cur_trj = list(eval(df_test['POLYLINE'][i]))
@@ -130,37 +123,89 @@ def load_seq_input():
             te_seq.append(cur_trj)
         else:
             te_seq.append(cur_trj[:-1])
-    
-    tr_seq = sequence.pad_sequences(tr_seq,maxlen=MAX_LENGTH,dtype='float32')
     te_seq = sequence.pad_sequences(te_seq,maxlen=MAX_LENGTH,dtype='float32')
-    tr_seq = np.array(tr_seq)
     te_seq = np.array(te_seq)
-    tr_seq_input = {'seq_input':tr_seq}
     te_seq_input = {'seq_input':te_seq}
-    return tr_seq_input ,te_seq_input
+    return te_seq_input
 
 
-#def cluster():
-#    df_train = pd.read_cs(Train_CSV_Path,header=0)
-#    destination = []
-#    for i in range(len(df_train)):
-#        destination.append(list(eval(df_train['DESTINATION'][i])))
-#
-#    destination = np.array(destination)
-#    bw = estimate_bandwidth(
-#            destination,
-#            quantile = 0.1,
-#            n_samples = 1000
-#            )
-#    ms = MeanShift(
-#            bandwidth = bw,
-#            bin_seeding = True,
-#            min_bin_freq = 5
-#            )
-#    ms.fit(destination)
-#    cluster_centers = ms.cluster_centers
-#    with h5py.File('cluster.h5','w') as f:
-#        f.create_dataset('cluster',data = cluster_centers)
+def prepare_inputX(con_feature,emb_feature,seq_feature):
+    n_emb = emb_feature.shape[1]
+    input_x = []
+    input_x.append(con_feature)
+    for i in range(n_emb):
+        input_x.append(emb_feature[:,i])
+    input_x.append(seq_feature)
+    return input_x
+
+###### handle only train dataset #############################
+def train_generator(generate_size = 200):
+    tr_con_input,te_con_input = load_con_input()
+    tr_emb_input,te_emb_input,vocabs_size = load_emb_input()
+
+    tr_con_feature = tr_con_input['con_input']
+    tr_label = tr_con_input['output']
+    tr_emb_feature = tr_emb_input['emb_input']
+
+    df_train = pd.read_csv(Train_CSV_Path,header=0)
+    while 1:
+        sub_tr_con_feature = []
+        sub_tr_emb_feature = []
+        sub_tr_seq_feature = []
+        sub_tr_label = []
+        for i in range(len(df_train) - Val_Size):
+            sub_tr_con_feature.append(tr_con_feature[i])
+            sub_tr_emb_feature.append(tr_emb_feature[i])
+            sub_tr_label.append(tr_label[i])
+            cur_trj = list(eval(df_train['POLYLINE'][i]))
+            if len(cur_trj) == 1:
+                sub_tr_seq_feature.append(cur_trj)
+            else:
+                sub_tr_seq_feature.append(cur_trj[:-1])
+            if len(sub_tr_seq_feature) == generate_size:
+                sub_tr_seq_feature = sequence.pad_sequences(sub_tr_seq_feature,maxlen=MAX_LENGTH,dtype='float32')
+                sub_tr_seq_feature = np.array(sub_tr_seq_feature)
+                sub_tr_con_feature = np.array(sub_tr_con_feature)
+                sub_tr_emb_feature = np.array(sub_tr_emb_feature)
+                sub_tr_label = np.array(sub_tr_label)
+                sub_tr_feature = prepare_inputX(sub_tr_con_feature,sub_tr_emb_feature,sub_tr_seq_feature)
+                yield sub_tr_feature,sub_tr_label
+                sub_tr_con_feature = []
+                sub_tr_emb_feature = []
+                sub_tr_seq_feature = []
+                sub_tr_label = []
+
+
+def getValData():
+    tr_con_input,te_con_input = load_con_input()
+    tr_emb_input,te_emb_input,vocabs_size = load_emb_input()
+
+    tr_con_feature = tr_con_input['con_input']
+    tr_label = tr_con_input['output']
+    tr_emb_feature = tr_emb_input['emb_input']
+
+    df_train = pd.read_csv(Train_CSV_Path,header=0)
+    val_con_feature = []
+    val_emb_feature = []
+    val_seq_feature = []
+    val_label = []
+    for i in range(1,Val_Size+1):
+        val_con_feature.append(tr_con_feature[len(df_train)-i])
+        val_emb_feature.append(tr_emb_feature[len(df_train)-i])
+        val_label.append(tr_label[len(df_train)-i])
+        cur_trj = list(eval(df_train['POLYLINE'][len(df_train)-i]))
+        if len(cur_trj) == 1:
+            val_seq_feature.append(cur_trj)
+        else:
+            val_seq_feature.append(cur_trj[:-1])
+    val_seq_feature = sequence.pad_sequences(val_seq_feature,maxlen=MAX_LENGTH,dtype='float32')
+    val_seq_feature = np.array(val_seq_feature)
+    val_con_feature = np.array(val_con_feature)
+    val_emb_feature = np.array(val_emb_feature)
+    val_label = np.array(val_label)
+    val_feature = prepare_inputX(val_con_feature,val_emb_feature,val_seq_feature)
+    return val_feature,val_label
+
 
 
 def const(v):
