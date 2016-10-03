@@ -8,13 +8,14 @@ import time as Time
 from time import time
 
 from sklearn.neighbors import NearestNeighbors
+from sklearn.linear_model import LinearRegression
 from sklearn.externals import joblib
 
 from utils import compute_hdistance,compute_odistance
 from config import front_num_points,last_num_points,num_neighbors
 from config import train_csv_path,test_csv_path
 from config import dict_calltype,dict_daytype
-
+from config import LastLength
 
 
 min_lon = -8.8
@@ -148,6 +149,8 @@ def generate_lastPartTrjData(csv_path,num_points,isTrain):
     df['TRJ_LAST_POINTS'] = lastPart_list
     df.to_csv(csv_path,index = False)
 
+
+
 def gen_trjfeature(csv_path):
     df = pd.read_csv(csv_path,header = 0)
     h_distance_list = []
@@ -211,58 +214,153 @@ def gen_trjfeature(csv_path):
     df.to_csv(csv_path,index = False)
 
 
-def gen_gridfeature(csv_path):
-    df = pd.read_csv(csv_path,header = 0)
-    df_length = len(df)
-    grid_nums = {}
-    startPoint_nums = {}
-    endPoint_nums = {}
-    for i in range(df_length):
-        cur_trj_idx_list = list(eval(df['TRJ_IDX'][i]))
-        startPoint = cur_trj_idx_list[0]
-        endPoint = cur_trj_idx_list[-1]
-        for cur_trj_idx in cur_trj_idx_list:
-            if cur_trj_idx in grid_nums.keys():
-                grid_nums[cur_trj_idx] = grid_nums[cur_trj_idx] + 1
-            else:
-                grid_nums[cur_trj_idx] = 1
+#def gen_gridfeature(csv_path):
+#    df = pd.read_csv(csv_path,header = 0)
+#    df_length = len(df)
+#    grid_nums = {}
+#    startPoint_nums = {}
+#    endPoint_nums = {}
+#    for i in range(df_length):
+#        cur_trj_idx_list = list(eval(df['TRJ_IDX'][i]))
+#        startPoint = cur_trj_idx_list[0]
+#        endPoint = cur_trj_idx_list[-1]
+#        for cur_trj_idx in cur_trj_idx_list:
+#            if cur_trj_idx in grid_nums.keys():
+#                grid_nums[cur_trj_idx] = grid_nums[cur_trj_idx] + 1
+#            else:
+#                grid_nums[cur_trj_idx] = 1
+#
+#        if startPoint in startPoint_nums.keys():
+#            startPoint_nums[startPoint] = startPoint_nums[startPoint] + 1
+#        else:
+#            startPoint_nums[startPoint] = 1
+#
+#        if endPoint in endPoint_nums.keys():
+#            endPoint_nums[endPoint] = endPoint_nums[endPoint] + 1
+#        else:
+#            endPoint_nums[endPoint] = 1
+#    
+#    df = pd.DataFrame()
+#    grid_nums_list = []
+#    startPoint_nums_list = []
+#    endPoint_nums_list = []
+#    for grid_idx in range(1, numsOfgrid_lat_axis*numsOfgrid_lon_axis + 1):
+#        if grid_idx in grid_nums.keys():
+#            grid_nums_list.append(grid_nums[grid_idx])
+#        else:
+#            grid_nums_list.append(0)
+#
+#        if grid_idx in startPoint_nums.keys():
+#            startPoint_nums_list.append(startPoint_nums[grid_idx])
+#        else:
+#            startPoint_nums_list.append(0)
+#
+#        if grid_idx in endPoint_nums.keys():
+#            endPoint_nums_list.append(endPoint_nums[grid_idx])
+#        else:
+#            endPoint_nums_list.append(0)
+#
+#    df['grid_idx']= range(1,numsOfgrid_lat_axis * numsOfgrid_lon_axis +1)
+#    df['grid_nums'] = grid_nums_list
+#    df['startPoint_nums'] = startPoint_nums_list
+#    df['endPoint_nums'] = endPoint_nums_list
+#
+#    df.to_csv('map/grid_feature.csv',index=False)
 
-        if startPoint in startPoint_nums.keys():
-            startPoint_nums[startPoint] = startPoint_nums[startPoint] + 1
+def generate_LR_feature():
+    ################# add call_id and stand_id feature ###################
+    df_train = pd.read_csv(train_csv_path,header=0)
+    df_test = pd.read_csv(test_csv_path,header=0)
+    df_train = df_train.fillna(0)
+    df_test = df_test.fillna(0)
+
+    train_trj_lastpart = []
+    train_destination = []
+    test_trj_lastpart = []
+
+    for i in range(len(df_train)):
+        cur_lastpart = list(eval(df_train['TRJ_LAST_POINTS'][i]))
+        cur_destination = list(eval(df_train['DESTINATION'][i]))
+        train_trj_lastpart.append(cur_lastpart)
+        train_destination.append(cur_destination)
+    train_trj_lastpart = np.array(train_trj_lastpart)
+    train_trj_lastpart = train_trj_lastpart.reshape(train_trj_lastpart.shape[0],train_trj_lastpart.shape[1]*train_trj_lastpart.shape[2])
+    train_destination = np.array(train_destination)
+
+    for i in range(len(df_test)):
+        cur_lastpart = list(eval(df_test['TRJ_LAST_POINTS'][i]))
+        test_trj_lastpart.append(cur_lastpart)
+    test_trj_lastpart = np.array(test_trj_lastpart)
+    test_trj_lastpart = test_trj_lastpart.reshape(test_trj_lastpart.shape[0],test_trj_lastpart.shape[1]*test_trj_lastpart.shape[2])
+
+    for cur_length in LastLength:
+
+        lr = LinearRegression(n_jobs = -1)
+        lr.fit(train_trj_lastpart[:,-2*cur_length:],train_destination)
+
+
+        tr_destination_predict = lr.predict(train_trj_lastpart[:,-2*cur_length:])
+        te_destination_predict = lr.predict(test_trj_lastpart[:,-2*cur_length:])
+
+        df_train['LR_DESTINATION_LON_'+str(cur_length)]=tr_destination_predict[:,0]
+        df_train['LR_DESTINATION_LAT_'+str(cur_length)]=tr_destination_predict[:,1]
+        df_test['LR_DESTINATION_LON_'+str(cur_length)]=te_destination_predict[:,0]
+        df_test['LR_DESTINATION_LAT_'+str(cur_length)]=te_destination_predict[:,1]
+
+    df_train.to_csv(train_csv_path,index=False)
+    df_test.to_csv(test_csv_path,index=False)
+
+
+def generate_direction_feature():
+    df_train = pd.read_csv(train_csv_path,header=0)
+    df_test = pd.read_csv(test_csv_path,header=0)
+
+    train_direction_list = []
+    test_direction_list = []
+
+    for i in range(len(df_train)):
+        cur_polyline = list(eval(df_train['POLYLINE'][i]))
+        if len(cur_polyline) >=3:
+            start_lon = cur_polyline[0][0]
+            start_lat = cur_polyline[0][1]
+            last_lon = cur_polyline[-2][0]
+            last_lat = cur_polyline[-2][1]
+            if last_lon>=start_lon and last_lat>=start_lat:
+                train_direction_list.append(1)
+            elif last_lon<=start_lon and last_lat>=start_lat:
+                train_direction_list.append(2)
+            elif last_lon<=start_lon and last_lat<=start_lat:
+                train_direction_list.append(3)
+            elif last_lon>=start_lon and last_lat<=start_lat:
+                train_direction_list.append(4)
         else:
-            startPoint_nums[startPoint] = 1
+            train_direction_list.append(np.random.randint(4)+1)
 
-        if endPoint in endPoint_nums.keys():
-            endPoint_nums[endPoint] = endPoint_nums[endPoint] + 1
+    for i in range(len(df_test)):
+        cur_polyline = list(eval(df_test['POLYLINE'][i]))
+        if len(cur_polyline) >=2:
+            start_lon = cur_polyline[0][0]
+            start_lat = cur_polyline[0][-1]
+            last_lon = cur_polyline[-1][0]
+            last_lat = cur_polyline[-1][1]
+            if last_lon>=start_lon and last_lat>=start_lat:
+                test_direction_list.append(1)
+            elif last_lon<=start_lon and last_lat>=start_lat:
+                test_direction_list.append(2)
+            elif last_lon<=start_lon and last_lat<=start_lat:
+                test_direction_list.append(3)
+            elif last_lon>=start_lon and last_lat<=start_lat:
+                test_direction_list.append(4)
         else:
-            endPoint_nums[endPoint] = 1
-    
-    df = pd.DataFrame()
-    grid_nums_list = []
-    startPoint_nums_list = []
-    endPoint_nums_list = []
-    for grid_idx in range(1, numsOfgrid_lat_axis*numsOfgrid_lon_axis + 1):
-        if grid_idx in grid_nums.keys():
-            grid_nums_list.append(grid_nums[grid_idx])
-        else:
-            grid_nums_list.append(0)
+            test_direction_list.append(np.random.randint(4)+1)
+    print(str(len(train_direction_list)))
+    print(str(len(test_direction_list)))
+    df_train['DIRECTION'] = train_direction_list
+    df_test['DIRECTION'] = test_direction_list
+    df_train.to_csv(train_csv_path,index=False)
+    df_test.to_csv(test_csv_path,index=False)
 
-        if grid_idx in startPoint_nums.keys():
-            startPoint_nums_list.append(startPoint_nums[grid_idx])
-        else:
-            startPoint_nums_list.append(0)
 
-        if grid_idx in endPoint_nums.keys():
-            endPoint_nums_list.append(endPoint_nums[grid_idx])
-        else:
-            endPoint_nums_list.append(0)
-
-    df['grid_idx']= range(1,numsOfgrid_lat_axis * numsOfgrid_lon_axis +1)
-    df['grid_nums'] = grid_nums_list
-    df['startPoint_nums'] = startPoint_nums_list
-    df['endPoint_nums'] = endPoint_nums_list
-
-    df.to_csv('map/grid_feature.csv',index=False)
 
 
 
@@ -287,7 +385,7 @@ def generate_neighbours_feature():
 
     neigh = NearestNeighbors(num_neighbors + 1,0.4,metric='euclidean',algorithm = 'kd_tree',n_jobs = -1)
     neigh.fit(train_trj_lastpart)
-    joblib.dump(neigh,'neigh.m') 
+    joblib.dump(neigh,'neigh.m')
     train_neighbors_idx_odistance = np.array(neigh.kneighbors(train_trj_lastpart))
     test_neighbors_idx_odistance = np.array(neigh.kneighbors(test_trj_lastpart))
 
@@ -351,11 +449,11 @@ def run():
     #timestamp2features(test_csv_path)
     #print("5---timestamp2features train test completed.....")
 
-    gen_trjfeature(train_csv_path)
+    #gen_trjfeature(train_csv_path)
     #gen_trjfeature(test_csv_path)
-    print("6---generate trj feature train test completed......")
+    #print("6---generate trj feature train test completed......")
 
-
+    
     #gen_gridfeature(train_csv_path)
     #print("6---generate grid feature train completed......")
 
@@ -363,8 +461,11 @@ def run():
     #print('7---generate train test neighbors features .....')
 
 
+    #generate_LR_feature()
+    #print('8---generate train test LR features .....')
 
-
+    generate_direction_feature()
+    print('9--- generate train test DIRECTION feature........')
 
 
 if __name__=='__main__':

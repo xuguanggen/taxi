@@ -16,9 +16,9 @@ import sys
 sys.path.append('..')
 from preprocess.config import front_num_points,last_num_points,num_neighbors
 from preprocess.config import train_csv_path,test_csv_path
+from preprocess.config import fields
 
-
-Model_Name = 'rf_20160925_1.3'
+Model_Name = 'rf_20161002_1.4'
 
 
 

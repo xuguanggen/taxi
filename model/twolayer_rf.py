@@ -20,7 +20,9 @@ from preprocess.config import fields
 
 
 
-Model_Name = 'TwoLayerRF_20160925_1'
+#Model_Name = 'TwoLayerRF_20160925_1'
+Model_Name = 'TwoLayerRF_20161003_2'
+
 
 
 
@@ -39,19 +41,19 @@ def run(result_csv_path):
     test_x = load_data(test_csv_path,False)
     print('load data successfully.........')
 
-    #print('layer 1 train..........')
-    #layer1_rf = RandomForestRegressor(
-    #        n_estimators = 2500,
-    #        max_features = 0.8,
-    #        bootstrap = False,
-    #        max_depth = 15,
-    #        n_jobs = -1
-    #        )
-    #layer1_rf.fit(train_x,train_y)
-    ################## save model##################
-    #joblib.dump(layer1_rf,'weights/layer1_'+Model_Name+'.m')
+    print('layer 1 train..........')
+    layer1_rf = RandomForestRegressor(
+            n_estimators = 2500,
+            max_features = 0.8,
+            bootstrap = False,
+            max_depth = 15,
+            n_jobs = -1
+            )
+    layer1_rf.fit(train_x,train_y)
+    ################# save model##################
+    joblib.dump(layer1_rf,'weights/layer1_'+Model_Name+'.m')
 
-    layer1_rf = joblib.load('weights/layer1_'+Model_Name+'.m')
+    #layer1_rf = joblib.load('weights/layer1_'+Model_Name+'.m')
     tr_pred = layer1_rf.predict(train_x)
     train_x = feature_engineer(layer1_rf,train_x,tr_pred)
 
