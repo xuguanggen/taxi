@@ -20,7 +20,8 @@ from preprocess.config import fields
 
 
 
-Model_Name = 'ThreeLayerRF_20160929_1'
+#Model_Name = 'ThreeLayerRF_20160929_1'
+Model_Name = 'ThreeLayerRF_20161008_2'
 
 
 
@@ -61,7 +62,7 @@ def run(result_csv_path):
     print('layer 2 train ............')
     layer2_rf = RandomForestRegressor(
             n_jobs = -1,
-            n_estimators = 600,
+            n_estimators = 800, #[600]
             max_features = 'sqrt',
             max_depth = 20,
             bootstrap = False
@@ -77,7 +78,7 @@ def run(result_csv_path):
     print('layer 3 train ..............')
     layer3_rf = RandomForestRegressor(
             n_jobs = -1,
-            n_estimators = 500,
+            n_estimators = 600, #[500]
             max_features = 'sqrt',
             max_depth = 20,
             bootstrap = False
