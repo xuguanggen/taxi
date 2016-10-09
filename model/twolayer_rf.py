@@ -21,7 +21,9 @@ from preprocess.config import fields
 
 
 #Model_Name = 'TwoLayerRF_20160925_1'
-Model_Name = 'TwoLayerRF_20161003_2'
+#Model_Name = 'TwoLayerRF_20161003_2'
+Model_Name = 'TwoLayerRF_20161005_3'
+
 
 
 
@@ -63,9 +65,9 @@ def run(result_csv_path):
     print('layer 2 train ............')
     layer2_rf = RandomForestRegressor(
             n_jobs = -1,
-            n_estimators = 600,
+            n_estimators = 1000,
             max_features = 'sqrt',
-            max_depth = 20,
+            max_depth = 18,
             bootstrap = False
             )
     layer2_rf.fit(train_x,train_y)

@@ -18,7 +18,8 @@ from preprocess.config import front_num_points,last_num_points,num_neighbors
 from preprocess.config import train_csv_path,test_csv_path
 from preprocess.config import fields
 
-Model_Name = 'rf_20161002_1.4'
+#Model_Name = 'rf_20161002_1.4'
+Model_Name = 'rf_20161004_1.5'
 
 
 
@@ -29,9 +30,9 @@ def run(result_csv_path):
     print('load data successfully ......')
 
     rf = RandomForestRegressor(
-            n_estimators = 2500, #[1500,2000]
+            n_estimators = 2000, #[1500,2000]
             min_samples_split = 2,
-            max_depth = 16, # [10,15]
+            max_depth = 15, # [10,15]
             n_jobs = -1
             )
     rf.fit(train_x,train_y)
