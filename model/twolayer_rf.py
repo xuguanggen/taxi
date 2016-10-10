@@ -8,6 +8,9 @@ import pandas as pd
 from sklearn.externals import joblib
 from sklearn.ensemble import RandomForestRegressor
 
+from sklearn.grid_search import GridSearchCV
+
+
 from utils import load_data
 from utils import save_results
 
@@ -22,7 +25,8 @@ from preprocess.config import fields
 
 #Model_Name = 'TwoLayerRF_20160925_1'
 #Model_Name = 'TwoLayerRF_20161003_2'
-Model_Name = 'TwoLayerRF_20161005_3'
+#Model_Name = 'TwoLayerRF_20161005_3'
+Model_Name = 'TwoLayerRF_20161010_4'
 
 
 
@@ -43,24 +47,28 @@ def run(result_csv_path):
     test_x = load_data(test_csv_path,False)
     print('load data successfully.........')
 
+    layer1_rf_paramters ={
+            'max_depth':range(15,21),
+            'max_features': [0.5,0.6,0.8],
+            'min_samples_leaf':[1,3,10]
+            }
+
     print('layer 1 train..........')
     layer1_rf = RandomForestRegressor(
             n_estimators = 2500,
-            max_features = 0.8,
-            bootstrap = False,
-            max_depth = 15,
             n_jobs = -1
             )
-    layer1_rf.fit(train_x,train_y)
+    layer1_gs_rf = GridSearchCV(layer1_rf,param_grid = layer1_rf_paramters)
+    layer1_gs_rf.fit(train_x,train_y)
     ################# save model##################
-    joblib.dump(layer1_rf,'weights/layer1_'+Model_Name+'.m')
+    joblib.dump(layer1_gs_rf,'weights/layer1_'+Model_Name+'.m')
 
     #layer1_rf = joblib.load('weights/layer1_'+Model_Name+'.m')
-    tr_pred = layer1_rf.predict(train_x)
-    train_x = feature_engineer(layer1_rf,train_x,tr_pred)
+    tr_pred = layer1_gs_rf.predict(train_x)
+    train_x = feature_engineer(layer1_gs_rf,train_x,tr_pred)
 
-    te_pred = layer1_rf.predict(test_x)
-    test_x = feature_engineer(layer1_rf,test_x,te_pred)
+    te_pred = layer1_gs_rf.predict(test_x)
+    test_x = feature_engineer(layer1_gs_rf,test_x,te_pred)
 
     print('layer 2 train ............')
     layer2_rf = RandomForestRegressor(
