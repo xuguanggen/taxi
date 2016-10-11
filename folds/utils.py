@@ -2,10 +2,12 @@
 
 import pandas as pd
 import numpy as np
+import math as Math
+
 
 from sklearn.cross_validation import KFold
 
-
+from generate_tr_val import N_FOLDS
 
 import sys
 sys.path.append('..')
@@ -55,21 +57,15 @@ def load_data(csv_path,isTrain):
 
 
 def load_all_data():
-    train_x,train_y = load_data(train_csv_path,True)
     test_x = load_data(test_csv_path,False)
-    
-    ######train_x,train_y --> train_x,train_y,val_x,val_y ######
-    kfold = KFold(n = train_x.shape[0],n_folds = 10,shuffle=True)
 
     train_fold_x = []
     train_fold_y = []
     val_fold_x = []
     val_fold_y = []
-    for tr_idxs,val_idxs in kfold:
-        sub_tr_fold_x = train_x[tr_idxs]
-        sub_tr_fold_y = train_y[tr_idxs]
-        sub_val_fold_x = train_x[val_idxs]
-        sub_val_fold_y = train_y[val_idxs]
+    for fold_idx in range(N_FOLDS):
+        sub_tr_fold_x,sub_tr_fold_y = load_data('../data/clean_data/folds_data/train_'+str(fold_idx)+'_fold.csv',True)
+        sub_val_fold_x,sub_tr_fold_y = load_data('../data/clean_data/folds_data/val_'+str(fold_idx)+'_fold.csv',True)
 
         train_fold_x.append(sub_tr_fold_x)
         train_fold_y.append(sub_tr_fold_y)
@@ -78,10 +74,45 @@ def load_all_data():
 
     return train_fold_x,train_fold_y,val_fold_x,val_fold_y,test_x
 
+def rad(d):
+    return d * Math.pi /180.0
 
+###  return hdistance unit is miles ################
+def compute_hdistance(lon1,lat1,lon2,lat2):
+    lon1 = float(lon1)
+    lat1 = float(lat1)
+    lon2 = float(lon2)
+    lat2 = float(lat2)
 
+    radLat1 = rad(lat1)
+    radLat2 = rad(lat2)
+    a = radLat1 - radLat2
+    b = rad(lon1) - rad(lon2)
+    s = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(a/2),2) + 
+        Math.cos(radLat1) * Math.cos(radLat2) * Math.pow(Math.sin(b/2),2)))
+    s = s * 6378.137
+    s = round(s * 10000) /10000
+    return s
 
+def gen_report(true_pt,pred_pt,report_path,fold_idx):
+    sum_error = 0
+    min_error = 10000000
+    max_error = 0
+    for i in range(true_pt.shape[0]):
+        cur_error = compute_error(true_pt[i][0],true_pt[i][1],pred_pt[i][0],pred_pt[i][1])
+        min_error = min(min_error,cur_error)
+        max_error = max(max_error,cur_error)
+        sum_error += cur_error
 
+    avg_error = sum_error / true_pt.shape[0]
+    f_report = open(report_path,'a')
+    f_report.write('====================================')
+    f_report.write('Fold:\t'+str(fold_idx)+'\n')
+    f_report.write('min_error:\t'+str(min_error)+'\n')
+    f_report.write('max_error:\t'+str(max_error)+'\n')
+    f_report.write('mean_error:\t'+str(avg_error)+'\n\n\n')
+    f_report.close()
+    return avg_error
 
 
 def save_results(result_csv_path,y_pred):

@@ -205,7 +205,6 @@ def gen_trjfeature(csv_path):
             #lastPoint_destination_distance_list.append(distance)
 
             trj_time_list.append(15 * (len(cur_trj_lonlat_list)))
-        print(str(i))
         calltype_list.append(dict_calltype[df['CALL_TYPE'][i]])
         daytype_list.append(dict_daytype[df['DAY_TYPE'][i]])
     df["TRJ_Haversine_DISTANCE"] = h_distance_list
@@ -272,10 +271,10 @@ def gen_trjfeature(csv_path):
 #
 #    df.to_csv('map/grid_feature.csv',index=False)
 
-def generate_LR_feature():
+def generate_LR_feature(tr_csv_path,val_csv_path):
     ################# add call_id and stand_id feature ###################
-    df_train = pd.read_csv(train_csv_path,header=0)
-    df_test = pd.read_csv(test_csv_path,header=0)
+    df_train = pd.read_csv(tr_csv_path,header=0)
+    df_test = pd.read_csv(val_csv_path,header=0)
     df_train = df_train.fillna(0)
     df_test = df_test.fillna(0)
 
@@ -312,13 +311,13 @@ def generate_LR_feature():
         df_test['LR_DESTINATION_LON_'+str(cur_length)]=te_destination_predict[:,0]
         df_test['LR_DESTINATION_LAT_'+str(cur_length)]=te_destination_predict[:,1]
 
-    df_train.to_csv(train_csv_path,index=False)
-    df_test.to_csv(test_csv_path,index=False)
+    df_train.to_csv(tr_csv_path,index=False)
+    df_test.to_csv(val_csv_path,index=False)
 
 
-def generate_direction_feature():
-    df_train = pd.read_csv(train_csv_path,header=0)
-    df_test = pd.read_csv(test_csv_path,header=0)
+def generate_direction_feature(tr_csv_path,val_csv_path):
+    df_train = pd.read_csv(tr_csv_path,header=0)
+    df_test = pd.read_csv(val_csv_path,header=0)
 
     train_direction_list = []
     test_direction_list = []
@@ -358,20 +357,20 @@ def generate_direction_feature():
                 test_direction_list.append(4)
         else:
             test_direction_list.append(np.random.randint(4)+1)
-    print(str(len(train_direction_list)))
-    print(str(len(test_direction_list)))
+    #print(str(len(train_direction_list)))
+    #print(str(len(test_direction_list)))
     df_train['DIRECTION'] = train_direction_list
     df_test['DIRECTION'] = test_direction_list
-    df_train.to_csv(train_csv_path,index=False)
-    df_test.to_csv(test_csv_path,index=False)
+    df_train.to_csv(tr_csv_path,index=False)
+    df_test.to_csv(val_csv_path,index=False)
 
 
 
 
 
-def generate_neighbours_feature():
-    df_train = pd.read_csv(train_csv_path,header = 0)
-    df_test = pd.read_csv(test_csv_path,header = 0)
+def generate_neighbours_feature(tr_csv_path,val_csv_path):
+    df_train = pd.read_csv(tr_csv_path,header = 0)
+    df_test = pd.read_csv(val_csv_path,header = 0)
 
     train_trj_lastpart = []
     train_destination = []
@@ -431,14 +430,15 @@ def generate_neighbours_feature():
     df_test['NEIGHBORS_Euclidean_DISTANCE'] = test_neigh_odist_list
     df_test['NEIGHBORS_DESTINATION'] = test_neigh_destination_list
 
-    df_train.to_csv(train_csv_path,index=False)
-    df_test.to_csv(test_csv_path,index=False)
+    df_train.to_csv(tr_csv_path,index=False)
+    df_test.to_csv(val_csv_path,index=False)
 
 def run():
     for fold_idx in range(N_FOLDS):
         tr_csv_path = '../data/clean_data/folds_data/train_'+str(fold_idx)+'_fold.csv'
         val_csv_path = '../data/clean_data/folds_data/val_'+str(fold_idx)+'_fold.csv'
-
+        
+        print('#### '+str(fold_idx)+' #########')
         generate_firstPartTrjData(tr_csv_path, front_num_points,True)
         generate_firstPartTrjData(val_csv_path, front_num_points,True)
         print("3---generate_firstPartTrjData train test completed .....")
@@ -455,16 +455,13 @@ def run():
         gen_trjfeature(val_csv_path)
         print("6---generate trj feature train test completed......")
 
-        
-
-        generate_neighbours_feature()
+        generate_neighbours_feature(tr_csv_path,val_csv_path)
         print('7---generate train test neighbors features .....')
 
-
-        generate_LR_feature()
+        generate_LR_feature(tr_csv_path,val_csv_path)
         print('8---generate train test LR features .....')
 
-        generate_direction_feature()
+        generate_direction_feature(tr_csv_path,val_csv_path)
         print('9--- generate train test DIRECTION feature........')
 
 
