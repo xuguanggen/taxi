@@ -15,14 +15,6 @@ from utils import save_results
 from utils import gen_report
 
 
-sys.path.append('..')
-
-
-
-
-Model_Name = 'rf_20161009_1'
-result_csv_path = 'result/'+Model_Name+'.csv'
-
 
 def run():
     ###### load data ###############
